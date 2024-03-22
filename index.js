@@ -173,7 +173,8 @@ export default class JWPlayer extends Component {
 	// TODO modify further to allow config to be a blend of things
 	static propTypes = {
 		config: PropTypes.shape({
-			license: PropTypes.string.isRequired,
+			license: PropTypes.string, // not really 100% required
+			forceLegacyConfig: PropTypes.bool,
 			backgroundAudioEnabled: PropTypes.bool,
 			category: PropTypes.oneOf([
 				'Ambient',

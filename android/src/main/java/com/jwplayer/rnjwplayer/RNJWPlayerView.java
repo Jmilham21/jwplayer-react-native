@@ -542,8 +542,6 @@ public class RNJWPlayerView extends RelativeLayout implements
 
     public void setConfig(ReadableMap prop) {
         if (mConfig == null || !mConfig.equals(prop)) {
-            // TODO what if playlist is a url or something?
-            // TODO How to handle a jwConfig vs old config
             if (mConfig != null && isOnlyDiff(prop, "playlist") && mPlayer != null) { // still safe check, even with JW
                                                                                       // JSON change
                 PlayerConfig oldConfig = mPlayer.getConfig();
@@ -621,9 +619,9 @@ public class RNJWPlayerView extends RelativeLayout implements
 
         JSONObject obj;
         PlayerConfig jwConfig = null;
-        Boolean mayBeJwConfig = prop.hasKey("forceLegacyConfig") ? !prop.getBoolean("forceLegacyConfig") : false;
+        Boolean forceLegacy = prop.hasKey("forceLegacyConfig") ? prop.getBoolean("forceLegacyConfig") : false;
         Boolean isJwConfig = false;
-        if(!mayBeJwConfig){
+        if(!forceLegacy){
             try {
                 obj = MapUtil.toJSONObject(prop);
                 jwConfig = JsonHelper.parseConfigJson(obj);

@@ -7,6 +7,7 @@ declare module "react-native-jw-media-player" {
   interface JwConfig {
     pid?: string;
     mute?: boolean;
+    forceLegacyConfig?: boolean;
     useTextureView?: boolean;
     autostart?: boolean;
     nextupoffset?: string|number; // String with % or number
@@ -494,6 +495,7 @@ declare module "react-native-jw-media-player" {
     config: Config | JwConfig;
     style?: ViewStyle;
     controls?: boolean;
+    forceLegacyConfig?: boolean;
     onPlayerReady?: () => void;
     onPlaylist?: (event: BaseEvent<PlaylistEventProps>) => void;
     onBeforePlay?: () => void;
