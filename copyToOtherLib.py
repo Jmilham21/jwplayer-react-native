@@ -2,7 +2,7 @@ from shutil import copytree, ignore_patterns
 import shutil
 import os
 
-BASE_DIR = os.path.join( os.curdir, '../../JwplayerReactTest/node_modules/react-native-jw-media-player' )
+BASE_DIR = os.path.join( os.curdir, '../../JwplayerReactTest/node_modules/jwplayer-react-native' )
 print(BASE_DIR)
 
 # shutil.rmtree(BASE_DIR)

@@ -468,7 +468,7 @@ DEPENDENCIES:
   - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - RNFS (from `../node_modules/react-native-fs`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
-  - RNJWPlayer (from `../node_modules/react-native-jw-media-player`)
+  - RNJWPlayer (from `../node_modules/jwplayer-react-native`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
@@ -575,7 +575,7 @@ EXTERNAL SOURCES:
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNJWPlayer:
-    :path: "../node_modules/react-native-jw-media-player"
+    :path: "../node_modules/jwplayer-react-native"
   RNScreens:
     :path: "../node_modules/react-native-screens"
   RNVectorIcons:

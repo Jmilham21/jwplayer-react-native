@@ -126,7 +126,7 @@ export default () => {
           renderAndroidPlayer()
         )
       }
-      text="Welcome to react-native-jw-media-player"
+      text="Welcome to jwplayer-react-native"
     />
   );
 };
