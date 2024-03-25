@@ -4829,8 +4829,8 @@ jsonfile@^6.0.1:
     object.assign "^4.1.4"
     object.values "^1.1.6"
 
-jwplayer-react-native@../../react-native-jw-media-player:
-  version "0.3.0-a1"
+jwplayer-react-native@../../jwplayer-react-native:
+  version "0.3.0"
 
 keyv@^4.5.3:
   version "4.5.4"
