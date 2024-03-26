@@ -314,7 +314,6 @@ class RNJWPlayerView : UIView, JWPlayerDelegate, JWPlayerStateDelegate, JWAdDele
                         self.setupPlayerView(config: config, playerConfig: try self.getPlayerConfiguration(config: config))
                     }
                 } else {
-                    self.setupPlayerViewController(config: config, playerConfig: jwConfig!)
                     if jwConfig != nil{
                         self.setupPlayerViewController(config: config, playerConfig: jwConfig!)
                     } else {
