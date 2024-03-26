@@ -28,6 +28,7 @@ declare module "jwplayer-react-native" {
     advertising?: JwAdvertisingConfig;
     playbackRates?: number[];
     playbackRateControls?: boolean;
+    license: string;
   }
 
   type JwThumbnailPreview = 101 | 102 | 103;
@@ -86,7 +87,7 @@ declare module "jwplayer-react-native" {
 
   interface ImaAdvertisingConfig {
     imaSdkSettings?: JwImaSdkSettings;
-    schedule?: JwAdBreak[]; // Array of breaks or object of breaks
+    schedule?: JwAdBreak[] | JwAdBreak; // Array of breaks or object of breaks
   }
 
   interface ImaDaiAdvertisingConfig {
@@ -104,10 +105,6 @@ declare module "jwplayer-react-native" {
     playerVersion?: string;
     isDebugMode?: boolean;
     doesRestrictToCustomPlayer?: boolean;
-  }
-
-  interface JwAdBreak {
-    ad: string;
   }
 
   interface JwLogoView{
@@ -150,20 +147,20 @@ declare module "jwplayer-react-native" {
   }
 
   interface JwPlaylistItem {
-    title: string;
-    description: string;
-    file: string;
-    image: string;
-    mediaid: string;
-    feedid: string;
-    recommendations: string;
-    starttime: string;
-    duration: string;
+    title?: string;
+    description?: string;
+    file?: string;
+    image?: string;
+    mediaid?: string;
+    feedid?: string;
+    recommendations?: string;
+    starttime?: number; // double -- default 0.0
+    duration: number; // int -- default 0
     tracks?: JwTrack[];
     sources?: JwSource[];
     externalMetadata?: JwExternalMetadata[];
-    adschedule: JwAdBreak[]; // array of schedules
-    schedule: { [key: string]: JwAdBreak };
+    adschedule?: JwAdBreak[]; // array of schedules
+    schedule?: { [key: string]: JwAdBreak };
     imaDaiSettings?: JwImaDaiSettings;
     httpheaders?: { [key: string]: string };
   }
@@ -178,12 +175,14 @@ declare module "jwplayer-react-native" {
   }
   
   interface JwAdBreak {
-    ad: string;
-    offset: string;
-    skipoffset: string;
-    type: string;
-    custParams: string;
+    ad?: string|string[];
+    offset?: string;
+    skipoffset?: number;
+    type?: JwAdType;
+    custParams?: { [key: string]: string };
   }
+
+  type JwAdType = "LINEAR" |"NONLINEAR";
 
   interface JwExternalMetadata { 
     startTime?: number; // double
@@ -192,21 +191,27 @@ declare module "jwplayer-react-native" {
   }
 
   interface JwSource { 
-    drm: JwDrm;
-    file: string;
-    label: string;
-    default: string;
-    type: string;
-    httpheaders: string;
+    drm?: JwDrm;
+    file?: string;
+    label?: string;
+    default?: string;
+    type?: string;
+    httpheaders?: { [key: string]: string };
   }
 
   interface JwDrm { 
-    widevine: string;
+    widevine?: JwWidevine;
+    fairplay?: JwFairplay;
+  }
+
+  interface JwFairplay {
+    processSpcUrl?: string;
+    certificateUrl?: string;
   }
 
   interface JwWidevine { 
-    url: string;
-    keySetId: string;
+    url?: string;
+    keySetId?: string;
   }
 
   interface JwTrack {
@@ -214,7 +219,7 @@ declare module "jwplayer-react-native" {
     file?: string;
     kind: string;
     label?: string;
-    default: boolean;
+    default?: boolean;
   }
 
   type JwRelatedOnComplete = "hide" | "show" | "none" | "autoplay";

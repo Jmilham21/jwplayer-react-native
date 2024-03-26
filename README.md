@@ -204,13 +204,45 @@ What you must supply in order to get started:
 #### Config
 Create config definition for dAPI style vs [legacy](docs/LEGACY_README.md#Config)
 
+`config` can be a `JwConfig`, or a now legacy `Config` as defined [here](docs/LEGACY_README.md#Config).
+
+The `JwConfig` is derived from the JWP Deliver API response, and matches a similiar pattern to the JWP web player.
+
+|Field                             |Description        |Type|Optional|Platform Specific|
+|----------------------------------|-------------------|----|--------|-----------------|
+|pid                               |player ID          |string|TRUE    |                 |
+|mute                              |                   |boolean|TRUE    |                 |
+|forceLegacyConfig                 |non-jw json        |boolean|TRUE    |                 |
+|useTextureView                    |                   |boolean|TRUE    |A                |
+|autostart                         |                   |boolean|TRUE    |                 |
+|nextupoffset                      |                   |string &#124; number|TRUE    |                 |
+|repeat                            |                   |boolean|TRUE    |                 |
+|allowCrossProtocolRedirectsSupport|                   |boolean|TRUE    |A                |
+|displaytitle                      |                   |boolean|TRUE    |                 |
+|displaydescription                |                   |boolean|TRUE    |                 |
+|stretching                        |                   |JwStretching|TRUE    |                 |
+|thumbnailPreview                  |                   |JwThumbnailPreview|TRUE    |                 |
+|preload                           |                   |boolean|TRUE    |                 |
+|playlist                          |                   |JwPlaylistItem[ ] &#124; string|TRUE    |                 |
+|sources                           |                   |JwSource[ ]|TRUE    |                 |
+|file                              |                   |string|TRUE    |                 |
+|playlistIndex                     |                   |number|TRUE    |                 |
+|related                           |                   |JwRelatedConfig|TRUE    |                 |
+|uiConfig                          |                   |JwUiConfig|TRUE    |                 |
+|logoView                          |                   |JwLogoView|TRUE    |                 |
+|advertising                       |                   |JwAdvertisingConfig|TRUE    |                 |
+|playbackRates                     |                   |number[ ]|TRUE    |                 |
+|playbackRateControls              |                   |boolean|TRUE    |                 |
+|license                           |non-jw json        |string|FALSE   |                 |
+
+
 ### Callbacks
 
 Explain the callbacks/listeners and what can be expected from them (copy as much as possible from native docs)
 
 ##### All Callbacks with data are wrapped in native events for instance this is how to get the data from `onTime` callback ->
 
-```
+```javascript
   onTime(event) {
     const {position, duration} = event.nativeEvent;
   }
