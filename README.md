@@ -1,5 +1,5 @@
 # jwplayer-react-native
-`<JWPlayer>` is a React Native Component that wraps around the JW Player native SDK's. This bridge allows for simple usage of the native SDKs in React Native applications.
+`<JWPlayer>` is a React Native Component that wraps around the JW Player native SDK's. This bridge allows for simple usage of the native SDKs in React Native applications. 
 
 ## Contents
 Table of contents (in no particular order for to level items)
