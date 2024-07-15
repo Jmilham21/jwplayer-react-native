@@ -21,7 +21,7 @@ struct Config: Codable {
     let category: String
     let categoryOptions: [String]
     let mode: String
-    let fullScreenOnLandscape, landscapeOnFullScreen, portraitOnExitFullScreen, exitFullScreenOnPortrait: Bool
+    let fullScreenOnLandscape, landscapeOnFullScreen, exitFullScreenOnPortrait: Bool
     let playlist: [Playlist]
     let stretching: String
     let related: Related
@@ -34,7 +34,7 @@ struct Config: Codable {
     enum CodingKeys: String, CodingKey {
         case license, advertising, autostart, controls
         case configRepeat = "repeat"
-        case nextUpStyle, styling, backgroundAudioEnabled, category, categoryOptions, mode, fullScreenOnLandscape, landscapeOnFullScreen, portraitOnExitFullScreen, exitFullScreenOnPortrait, playlist, stretching, related, preload, interfaceBehavior, interfaceFadeDelay, hideUIGroups
+        case nextUpStyle, styling, backgroundAudioEnabled, category, categoryOptions, mode, fullScreenOnLandscape, landscapeOnFullScreen, exitFullScreenOnPortrait, playlist, stretching, related, preload, interfaceBehavior, interfaceFadeDelay, hideUIGroups
         case processSpcURL = "processSpcUrl"
         case fairplayCERTURL = "fairplayCertUrl"
         case contentUUID, viewOnly, enableLockScreenControls, pipEnabled
