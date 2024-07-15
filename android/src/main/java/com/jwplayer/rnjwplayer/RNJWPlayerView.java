@@ -3,7 +3,7 @@ package com.jwplayer.rnjwplayer;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -12,8 +12,9 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
@@ -34,8 +35,8 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.jwplayer.pub.api.JsonHelper;
 import com.jwplayer.pub.api.JWPlayer;
+import com.jwplayer.pub.api.JsonHelper;
 import com.jwplayer.pub.api.UiGroup;
 import com.jwplayer.pub.api.background.MediaServiceController;
 import com.jwplayer.pub.api.configuration.PlayerConfig;
@@ -96,18 +97,23 @@ import com.jwplayer.pub.api.events.listeners.AdvertisingEvents;
 import com.jwplayer.pub.api.events.listeners.CastingEvents;
 import com.jwplayer.pub.api.events.listeners.PipPluginEvents;
 import com.jwplayer.pub.api.events.listeners.VideoPlayerEvents;
+import com.jwplayer.pub.api.fullscreen.ExtensibleFullscreenHandler;
+import com.jwplayer.pub.api.fullscreen.FullscreenDialog;
 import com.jwplayer.pub.api.fullscreen.FullscreenHandler;
+import com.jwplayer.pub.api.fullscreen.delegates.DeviceOrientationDelegate;
+import com.jwplayer.pub.api.fullscreen.delegates.DialogLayoutDelegate;
+import com.jwplayer.pub.api.fullscreen.delegates.SystemUiDelegate;
 import com.jwplayer.pub.api.license.LicenseUtil;
 import com.jwplayer.pub.api.media.playlists.PlaylistItem;
 import com.jwplayer.ui.views.CueMarkerSeekbar;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.json.JSONObject;
 
 public class RNJWPlayerView extends RelativeLayout implements
         VideoPlayerEvents.OnFullscreenListener,
@@ -170,8 +176,6 @@ public class RNJWPlayerView extends RelativeLayout implements
     public RNJWPlayer mPlayerView = null;
     public JWPlayer mPlayer = null;
 
-    private ViewGroup mRootView;
-
     // Props
     ReadableMap mConfig = null;
     ReadableArray mPlaylistProp = null;
@@ -181,7 +185,6 @@ public class RNJWPlayerView extends RelativeLayout implements
 
     Boolean landscapeOnFullScreen = false;
     Boolean fullScreenOnLandscape = false;
-    Boolean portraitOnExitFullScreen = false;
     Boolean exitFullScreenOnPortrait = false;
 
     Number currentPlayingIndex;
@@ -209,7 +212,7 @@ public class RNJWPlayerView extends RelativeLayout implements
 
     private final ReactApplicationContext mAppContext;
 
-    private ThemedReactContext mThemedReactContext;
+    private final ThemedReactContext mThemedReactContext;
 
     private MediaServiceController mMediaServiceController;
 
@@ -233,7 +236,7 @@ public class RNJWPlayerView extends RelativeLayout implements
     }
 
     private static Context getNonBuggyContext(ThemedReactContext reactContext,
-            ReactApplicationContext appContext) {
+                                              ReactApplicationContext appContext) {
         Context superContext = reactContext;
         if (!contextHasBug(appContext.getCurrentActivity())) {
             superContext = appContext.getCurrentActivity();
@@ -260,8 +263,6 @@ public class RNJWPlayerView extends RelativeLayout implements
         if (mActivity != null) {
             mWindow = mActivity.getWindow();
         }
-
-        mRootView = mActivity.findViewById(android.R.id.content);
 
         getReactContext().addLifecycleEventListener(this);
     }
@@ -348,7 +349,7 @@ public class RNJWPlayerView extends RelativeLayout implements
                     EventType.PIP_OPEN
             );
 
-            mPlayer  = null;
+            mPlayer = null;
             mPlayerView = null;
 
             getReactContext().removeLifecycleEventListener(this);
@@ -427,123 +428,124 @@ public class RNJWPlayerView extends RelativeLayout implements
                     EventType.PIP_OPEN
             );
 
-            mPlayer.setFullscreenHandler(new fullscreenHandler());
+            mPlayer.setFullscreenHandler(createFullscreenHandler());
 
             mPlayer.allowBackgroundAudio(backgroundAudioEnabled);
         }
     }
 
-    private class fullscreenHandler implements FullscreenHandler {
-        ViewGroup mPlayerViewContainer = (ViewGroup) mPlayerView.getParent();
-        private View mDecorView;
+    /**
+     * Listen to onConfigurationChanged in the view where the work needs to be done
+     * @param newConfig is the updated field(s) -- semi-dangerous assumption it's an orientation change
+     */
+    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // Enter fullscreen if we are oriented landscape
+            if (fullScreenOnLandscape) {
+                mPlayer.setFullscreen(true, true);
+            }
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            if (exitFullScreenOnPortrait) {
+                // Exit fullscreen if we go portrait with above flag set
+                mPlayer.setFullscreen(false, true);
+            }
+        }
+    }
 
-        @Override
-        public void onFullscreenRequested() {
-            mDecorView = mActivity.getWindow().getDecorView();
+    /**
+     * Helper to build the a generic `ExtensibleFullscreenHandler` with small tweaks
+     * @return {@link ExtensibleFullscreenHandler}
+     */
+    private ExtensibleFullscreenHandler createFullscreenHandler() {
+        DeviceOrientationDelegate delegate = getDeviceOrientationDelegate();
+        FullscreenDialog dialog = new FullscreenDialog(
+                mActivity,
+                mActivity,
+                android.R.style.Theme_Black_NoTitleBar_Fullscreen
+        );
 
-            // Hide system ui
-            mDecorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hides bottom bar
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN // hides top bar
-                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY // prevents navigation bar from overriding
-                    // exit-full-screen button. Swipe from side to access nav bar.
-            );
-
-            // Enter landscape mode for fullscreen videos
-            if (landscapeOnFullScreen) {
-                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        return new ExtensibleFullscreenHandler(
+                new DialogLayoutDelegate(
+                        mPlayerView,
+                        dialog
+                ),
+                delegate,
+                new SystemUiDelegate(
+                        mActivity,
+                        mActivity.getLifecycle(),
+                        new Handler(),
+                        dialog.getWindow().getDecorView()
+                )
+        ) {
+            @Override
+            public void onFullscreenRequested() {
+                // if landscape is priorty we have to turn off full-screen portrait before allowing
+                // the default call for full-screen
+                mPlayer.allowFullscreenPortrait(!landscapeOnFullScreen);
+                boolean allowFullPortrait = mPlayer.getAllowFullscreenPortrait();
+                super.onFullscreenRequested();
+                // safely set it back on UI thread after work can be finished
+                final Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(() -> {
+                    if (mPlayer != null) {
+                        mPlayer.allowFullscreenPortrait(true);
+                    }
+                }, 100);
             }
 
-            mPlayerViewContainer = (ViewGroup) mPlayerView.getParent();
+            @Override
+            public void onFullscreenExitRequested() {
+                super.onFullscreenExitRequested();
+            }
+        };
+    }
 
-            // Remove the JWPlayerView from the list item.
-            if (mPlayerViewContainer != null) {
-                mPlayerViewContainer.removeView(mPlayerView);
+    /**
+     * Add logic here for your custom orientation implementation
+     *
+     * @return Default {@link DeviceOrientationDelegate}
+     */
+    private DeviceOrientationDelegate getDeviceOrientationDelegate() {
+        DeviceOrientationDelegate delegate = new DeviceOrientationDelegate(
+                mActivity,
+                mActivity.getLifecycle(),
+                new Handler()
+        ) {
+            @Override
+            public void setFullscreen(boolean fullscreen) {
+                super.setFullscreen(fullscreen);
             }
 
-            // Initialize a new rendering surface.
-            // mPlayerView.initializeSurface();
-
-            // Add the JWPlayerView to the RootView as soon as the UI thread is ready.
-            mRootView.post(new Runnable() {
-                @Override
-                public void run() {
-                    mRootView.addView(mPlayerView, new ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT));
-                }
-            });
-
-            WritableMap eventEnterFullscreen = Arguments.createMap();
-            eventEnterFullscreen.putString("message", "onFullscreenRequested");
-            getReactContext().getJSModule(RCTEventEmitter.class).receiveEvent(
-                    getId(),
-                    "topFullScreenRequested",
-                    eventEnterFullscreen);
-        }
-
-        @Override
-        public void onFullscreenExitRequested() {
-            mDecorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_VISIBLE // clear the hide system flags
-            );
-
-            // Enter portrait mode
-            if (portraitOnExitFullScreen) {
-                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            @Override
+            public void onAllowRotationChanged(boolean allowRotation) {
+                super.onAllowRotationChanged(allowRotation);
             }
 
-            // Remove the player view from the root ViewGroup.
-            mRootView.removeView(mPlayerView);
+            @Override
+            protected void doRotation(boolean fullscreen, boolean allowFullscreenPortrait) {
+                super.doRotation(fullscreen, allowFullscreenPortrait);
+            }
 
-            // As soon as the UI thread has finished processing the current message queue it
-            // should add the JWPlayerView back to the list item.
-            mPlayerViewContainer.post(new Runnable() {
-                @Override
-                public void run() {
-                    mPlayerViewContainer.addView(mPlayerView, new ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT));
-                    mPlayerView.layout(mPlayerViewContainer.getLeft(), mPlayerViewContainer.getTop(),
-                            mPlayerViewContainer.getRight(), mPlayerViewContainer.getBottom());
-                }
-            });
+            @Override
+            protected void doRotationListener() {
+                super.doRotationListener();
+            }
 
-            WritableMap eventExitFullscreen = Arguments.createMap();
-            eventExitFullscreen.putString("message", "onFullscreenExitRequested");
-            getReactContext().getJSModule(RCTEventEmitter.class).receiveEvent(
-                    getId(),
-                    "topFullScreenExitRequested",
-                    eventExitFullscreen);
-        }
-
-        @Override
-        public void onAllowRotationChanged(boolean b) {
-            Log.e(TAG, "onAllowRotationChanged: " + b );
-        }
-
-        @Override
-        public void onAllowFullscreenPortraitChanged(boolean allowFullscreenPortrait) {
-            Log.e(TAG, "onAllowFullscreenPortraitChanged: " + allowFullscreenPortrait );
-        }
-
-        @Override
-        public void updateLayoutParams(ViewGroup.LayoutParams layoutParams) {
-            // View.setSystemUiVisibility(int).
-            // Log.e(TAG, "updateLayoutParams: "+layoutParams );
-        }
-
-        @Override
-        public void setUseFullscreenLayoutFlags(boolean b) {
-            // View.setSystemUiVisibility(int).
-            // Log.e(TAG, "setUseFullscreenLayoutFlags: "+b );
-        }
+            @Override
+            public void onAllowFullscreenPortrait(boolean allowFullscreenPortrait) {
+                super.onAllowFullscreenPortrait(allowFullscreenPortrait);
+            }
+        };
+        delegate.onAllowRotationChanged(true);
+        return delegate;
     }
 
     public void setConfig(ReadableMap prop) {
         if (mConfig == null || !mConfig.equals(prop)) {
             if (mConfig != null && isOnlyDiff(prop, "playlist") && mPlayer != null) { // still safe check, even with JW
-                                                                                      // JSON change
+                // JSON change
                 PlayerConfig oldConfig = mPlayer.getConfig();
                 PlayerConfig config = new PlayerConfig.Builder()
                         .autostart(oldConfig.getAutostart())
@@ -610,7 +612,7 @@ public class RNJWPlayerView extends RelativeLayout implements
 
     boolean playlistNotTheSame(ReadableMap prop) {
         return prop.hasKey("playlist") && mPlaylistProp != prop.getArray("playlist") && !Arrays
-                .deepEquals(new ReadableArray[] { mPlaylistProp }, new ReadableArray[] { prop.getArray("playlist") });
+                .deepEquals(new ReadableArray[]{mPlaylistProp}, new ReadableArray[]{prop.getArray("playlist")});
     }
 
     private void setupPlayer(ReadableMap prop) {
@@ -619,9 +621,9 @@ public class RNJWPlayerView extends RelativeLayout implements
 
         JSONObject obj;
         PlayerConfig jwConfig = null;
-        Boolean forceLegacy = prop.hasKey("forceLegacyConfig") ? prop.getBoolean("forceLegacyConfig") : false;
+        Boolean forceLegacy = prop.hasKey("forceLegacyConfig") && prop.getBoolean("forceLegacyConfig");
         Boolean isJwConfig = false;
-        if(!forceLegacy){
+        if (!forceLegacy) {
             try {
                 obj = MapUtil.toJSONObject(prop);
                 jwConfig = JsonHelper.parseConfigJson(obj);
@@ -758,12 +760,14 @@ public class RNJWPlayerView extends RelativeLayout implements
 
         if (prop.hasKey("fullScreenOnLandscape")) {
             fullScreenOnLandscape = prop.getBoolean("fullScreenOnLandscape");
-            mPlayerView.fullScreenOnLandscape = fullScreenOnLandscape;
+        }
+
+        if (prop.hasKey("landscapeOnFullScreen")) {
+            landscapeOnFullScreen = prop.getBoolean("landscapeOnFullScreen");
         }
 
         if (prop.hasKey("exitFullScreenOnPortrait")) {
             exitFullScreenOnPortrait = prop.getBoolean("exitFullScreenOnPortrait");
-            mPlayerView.exitFullScreenOnPortrait = exitFullScreenOnPortrait;
         }
 
         mPlayer = mPlayerView.getPlayer();
@@ -843,7 +847,7 @@ public class RNJWPlayerView extends RelativeLayout implements
             audioManager = (AudioManager) simpleContext.getSystemService(Context.AUDIO_SERVICE);
             // Throws a fatal error if using a playlistURL instead of manually created playlist
             // Related to SDK-11346
-            mMediaServiceController = new MediaServiceController.Builder((AppCompatActivity) mActivity, mPlayer)
+            mMediaServiceController = new MediaServiceController.Builder(mActivity, mPlayer)
                     .build();
         }
     }

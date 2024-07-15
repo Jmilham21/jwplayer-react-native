@@ -50,21 +50,6 @@ public class RNJWPlayer extends JWPlayerView {
     };
 
     @Override
-    protected void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            if (fullScreenOnLandscape) {
-                this.getPlayer().setFullscreen(true,true);
-            }
-        } else if (newConfig.orientation==Configuration.ORIENTATION_PORTRAIT) {
-            if (exitFullScreenOnPortrait) {
-                this.getPlayer().setFullscreen(false,false);
-            }
-        }
-    }
-
-    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK && this.getPlayer().getFullscreen()) {
             this.getPlayer().setFullscreen(false,false);

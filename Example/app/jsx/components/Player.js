@@ -22,6 +22,7 @@ export default forwardRef((props, ref) => {
       style={[{flex: 1}, style]}
       config={{
         license: Platform.select({ios: IOS_API_KEY, android: ANDROID_API_KEY}),
+        landscapeOnFullScreen: true,
         backgroundAudioEnabled: true,
         styling: {
           colors: {},
